@@ -47,6 +47,6 @@ class FindFieldXrefs(actions.HexRaysPopupAction):
             return
 
         xref = result[idx]
-        idaapi.open_pseudocode(xref.func_ea + xref.offset, False)
+        idaapi.jumpto(xref.func_ea + xref.offset)
 
 actions.action_manager.register(FindFieldXrefs())
