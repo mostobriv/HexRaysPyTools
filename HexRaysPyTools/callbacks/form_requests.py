@@ -62,7 +62,7 @@ idaapi.attach_action_to_menu('View/Open subviews/Local types', show_classes.name
 
 class ShowStructureBuilder(actions.HexRaysPopupAction):
     description = "Show Structure Builder"
-    hotkey = "Alt+F8"
+    hotkey = "Shift+P"
 
     def __init__(self):
         super(ShowStructureBuilder, self).__init__()
