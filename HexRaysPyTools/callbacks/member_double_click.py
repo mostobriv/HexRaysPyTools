@@ -49,6 +49,18 @@ class MemberDoubleClick(callbacks.HexRaysEventHandler):
             func_name = helper.get_member_name(vtable_tinfo, method_offset)
             func_ea = helper.choose_virtual_func_address(func_name, class_tinfo, vtable_offset)
             if func_ea:
+                target_func = idaapi.decompile(func_ea)
+                tl = ida_hexrays.treeloc_t()
+                tl.ea = target_func.body.ea
+                tl.itp = ida_hexrays.ITP_SEMI
+                old_comment = target_func.get_user_cmt(tl, 0)
+                jmp_src = item.e.ea
+                src_as_string = "0x{:x}".format(jmp_src)
+                if old_comment is None:
+                    old_comment = "CALLED_FROM =>"
+                if src_as_string not in old_comment:
+                    target_func.set_user_cmt(tl, "{} | {}".format(old_comment, src_as_string))
+                    target_func.save_user_cmts()
                 idaapi.jumpto(func_ea)
                 return 1
 
