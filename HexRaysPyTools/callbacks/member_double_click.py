@@ -33,7 +33,7 @@ class MemberDoubleClick(callbacks.HexRaysEventHandler):
                 func_ea = helper.choose_virtual_func_address(helper.get_member_name(struct_tinfo, func_offset))
                 if func_ea:
                     idaapi.jumpto(func_ea)
-                    
+
                 sid = idaapi.get_struc_id(struct_tinfo.dstr())
                 if sid != idaapi.BADADDR:
                     sptr = idaapi.get_struc(sid)
@@ -42,6 +42,22 @@ class MemberDoubleClick(callbacks.HexRaysEventHandler):
                     if comment:
                         try:
                             commented_address = int(comment, 16)
+                            try:
+                                target_func = idaapi.decompile(commented_address)
+                                tl = ida_hexrays.treeloc_t()
+                                tl.ea = target_func.body.ea
+                                tl.itp = ida_hexrays.ITP_SEMI
+                                old_comment = target_func.get_user_cmt(tl, 0)
+                                jmp_src = item.e.ea
+                                src_as_string = "0x{:x}".format(jmp_src)
+                                if old_comment is None:
+                                    old_comment = "CALLED_FROM =>"
+                                if src_as_string not in old_comment:
+                                    target_func.set_user_cmt(tl, "{} | {}".format(old_comment, src_as_string))
+                                    target_func.save_user_cmts()
+                            except Exception as e:
+                                print("[!] Got exception due adding comment to virtual call: %s" % e)
+                                
                             idaapi.jumpto(commented_address)
                         except:
                             pass
@@ -49,6 +65,20 @@ class MemberDoubleClick(callbacks.HexRaysEventHandler):
 
             func_name = helper.get_member_name(vtable_tinfo, method_offset)
             func_ea = helper.choose_virtual_func_address(func_name, class_tinfo, vtable_offset)
+
+            if not func_ea:
+                sid = idaapi.get_struc_id(vtable_tinfo.get_type_name())
+                if sid != idaapi.BADADDR:
+                    sptr = idaapi.get_struc(sid)
+                    mid = idaapi.get_member_id(sptr, method_offset)
+                    comment = idaapi.get_member_cmt(mid, False)
+                    if comment:
+                        try:
+                            commented_address = int(comment, 16)
+                            func_ea = commented_address
+                        except:
+                            pass
+
             if func_ea:
                 target_func = idaapi.decompile(func_ea)
                 tl = ida_hexrays.treeloc_t()
@@ -64,5 +94,7 @@ class MemberDoubleClick(callbacks.HexRaysEventHandler):
                     target_func.save_user_cmts()
                 idaapi.jumpto(func_ea)
                 return 1
+                
+
 
 callbacks.hx_callback_manager.register(idaapi.hxe_double_click, MemberDoubleClick())
